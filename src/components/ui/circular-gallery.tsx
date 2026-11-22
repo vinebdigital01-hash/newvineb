@@ -527,8 +527,8 @@ class AppCore {
     font: string
   ) {
     const defaultItems = [
-      { image: 'https://six2eight.com/_next/image?url=https%3A%2F%2Fb4550151.smushcdn.com%2F4550151%2Fwp-content%2Fuploads%2F2025%2F03%2Fpsd-colorful-modern-shape-3d-rendering-1-1.webp&w=828&q=75', text: 'Bridge', link: '/projects/bridge' },
-      { image: 'https://six2eight.com/_next/image?url=https%3A%2F%2Fb4550151.smushcdn.com%2F4550151%2Fwp-content%2Fuploads%2F2025%2F03%2Fimage-419.webp&w=640&q=75', text: 'Desk Setup', link: '/projects/desk' },
+      { image: 'https://b4550151.smushcdn.com/4550151/wp-content/uploads/2025/03/psd-colorful-modern-shape-3d-rendering-1-1.webp', text: 'Bridge', link: '/projects/bridge' },
+      { image: 'https://b4550151.smushcdn.com/4550151/wp-content/uploads/2025/03/image-419.webp', text: 'Desk Setup', link: '/projects/desk' },
       { image: 'https://picsum.photos/seed/3/800/600', text: 'Waterfall', link: '/projects/waterfall' },
       { image: 'https://picsum.photos/seed/4/800/600', text: 'Strawberries', link: '/projects/strawberries' },
       { image: 'https://picsum.photos/seed/5/800/600', text: 'Deep Diving', link: '/projects/diving' },

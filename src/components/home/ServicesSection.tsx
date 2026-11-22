@@ -35,7 +35,7 @@ export default function ServicesSection() {
         <div className="container mx-auto px-[16px] 2xl:px-0">
           <div className="grid grid-cols-1 lg:grid-cols-12">
             <div className="lg:col-span-7">
-              <div className="six2eight-heading">
+              <div className="vineb-heading">
                 <div className="block-top">
                   <div className="block-title">
                     <span className="bg-[#6060603D] text-white text-[16px] font-medium leading-[24px] rounded-[40px] px-[16px] py-[8px]">

@@ -14,18 +14,18 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Vineb Digital | Custom UX UI Design and Web Development Agency",
-  description: "Vineb Digital is a high-end UI/UX design and web development agency specializing in web, mobile apps, SaaS, WordPress, Webflow, and Shopify.",
+  title: "Vine B Digital | Custom UX UI Design and Web Development Agency",
+  description: "Vine B Digital is a high-end UI/UX design and web development agency specializing in web, mobile apps, SaaS, WordPress, Webflow, and Shopify.",
   openGraph: {
-    title: "Vineb Digital | Custom UX UI Design and Web Development",
-    description: "Vineb Digital is a high-end UI/UX design and web development agency specializing in web, mobile apps, SaaS, WordPress, Webflow, and Shopify.",
+    title: "Vine B Digital | Custom UX UI Design and Web Development",
+    description: "Vine B Digital is a high-end UI/UX design and web development agency specializing in web, mobile apps, SaaS, WordPress, Webflow, and Shopify.",
     type: "website",
-    url: "https://vineb.digital",
-    siteName: "Vineb Digital",
+    url: "https://vinebdigital.com",
+    siteName: "Vine B Digital",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Vineb Digital | Custom UX UI Design",
+    title: "Vine B Digital | Custom UX UI Design",
     description: "High-end UI/UX design and web development agency.",
   }
 };
