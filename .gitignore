@@ -39,3 +39,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# scratch / temp scripts
+*.log
+screenshot.js
+screenshot.png
+check-pin.js
+inspect.js
+formatted.tsx
+git_log.txt
+npm_install.log
+
