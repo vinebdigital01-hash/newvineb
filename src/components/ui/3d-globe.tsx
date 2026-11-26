@@ -12,7 +12,7 @@ import { MapPin } from "lucide-react";
 export interface GlobeMarker {
   lat: number;
   lng: number;
-  src: string;
+  src?: string;
   label?: string;
   size?: number;
 }
@@ -79,74 +79,74 @@ interface MarkerProps {
 
 function Marker({ marker, radius, defaultSize, onClick, onHover }: MarkerProps) {
   const [hovered, setHovered] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
   const groupRef = useRef<THREE.Group>(null);
+  const pinRef = useRef<HTMLDivElement>(null);
+  const visibleRef = useRef(true);
   const { camera } = useThree();
+  const worldPos = useMemo(() => new THREE.Vector3(), []);
+  const markerDir = useMemo(() => new THREE.Vector3(), []);
+  const cameraDir = useMemo(() => new THREE.Vector3(), []);
 
   const surfacePosition = useMemo(() => {
-    return latLngToVector3(marker.lat, marker.lng, radius); // No offset so it doesn't float
+    return latLngToVector3(marker.lat, marker.lng, radius);
   }, [marker.lat, marker.lng, radius]);
 
   useFrame(() => {
-    if (!groupRef.current) return;
-    const worldPos = new THREE.Vector3();
+    if (!groupRef.current || !pinRef.current) return;
     groupRef.current.getWorldPosition(worldPos);
-    const markerDirection = worldPos.clone().normalize();
-    const cameraDirection = camera.position.clone().normalize();
-    const dot = markerDirection.dot(cameraDirection);
-    // Hide marker if it rotates to the back of the globe (adjust threshold for smoother hiding)
-    setIsVisible(dot > 0.1);
+    markerDir.copy(worldPos).normalize();
+    cameraDir.copy(camera.position).normalize();
+    const nextVisible = markerDir.dot(cameraDir) > 0.1;
+    if (nextVisible !== visibleRef.current) {
+      visibleRef.current = nextVisible;
+      pinRef.current.style.opacity = nextVisible ? "1" : "0";
+      pinRef.current.style.pointerEvents = nextVisible ? "auto" : "none";
+    }
   });
 
   const handlePointerEnter = useCallback((e: any) => {
-    if (!isVisible) return;
+    if (!visibleRef.current) return;
     e.stopPropagation();
-    document.body.style.cursor = 'pointer';
+    document.body.style.cursor = "pointer";
     setHovered(true);
     onHover?.(marker);
-  }, [marker, onHover, isVisible]);
+  }, [marker, onHover]);
 
   const handlePointerLeave = useCallback((e: any) => {
-    if (!isVisible) return;
     e.stopPropagation();
-    document.body.style.cursor = 'auto';
+    document.body.style.cursor = "auto";
     setHovered(false);
     onHover?.(null);
-  }, [onHover, isVisible]);
+  }, [onHover]);
 
   const handleClick = useCallback((e: any) => {
-    if (!isVisible) return;
+    if (!visibleRef.current) return;
     e.stopPropagation();
     onClick?.(marker);
-  }, [marker, onClick, isVisible]);
+  }, [marker, onClick]);
 
   return (
     <group ref={groupRef} position={surfacePosition}>
-      {/* Pure 2D HTML Pin Overlay (Flawless hitboxes, no CSS3D bugs) */}
-      <Html
-        center
-        zIndexRange={[100, 0]}
-        style={{
-          pointerEvents: isVisible ? "auto" : "none",
-          opacity: isVisible ? 1 : 0,
-          transition: "opacity 0.2s ease-out",
-        }}
-      >
+      <Html center zIndexRange={[100, 0]}>
         <div
+          ref={pinRef}
           className={cn(
-            "flex items-center justify-center w-8 h-8 rounded-full border transition-all duration-300 cursor-pointer",
-            hovered 
-              ? "bg-blue-500/30 border-blue-400 scale-125 shadow-[0_0_15px_rgba(96,165,250,0.6)] backdrop-blur-md" 
-              : "bg-slate-900/60 border-slate-500/50 backdrop-blur-sm"
+            "flex items-center justify-center w-8 h-8 rounded-full border transition-[transform,background-color,border-color,box-shadow] duration-300 cursor-pointer",
+            hovered
+              ? "bg-blue-500/30 border-blue-400 scale-125 shadow-[0_0_15px_rgba(96,165,250,0.6)]"
+              : "bg-slate-900/60 border-slate-500/50"
           )}
+          style={{ opacity: 1, pointerEvents: "auto" }}
           onPointerEnter={handlePointerEnter}
           onPointerLeave={handlePointerLeave}
           onClick={handleClick}
         >
-          <MapPin className={cn(
-            "w-4 h-4 transition-colors duration-300",
-            hovered ? "text-blue-300" : "text-slate-300"
-          )} />
+          <MapPin
+            className={cn(
+              "w-4 h-4 transition-colors duration-300",
+              hovered ? "text-blue-300" : "text-slate-300"
+            )}
+          />
         </div>
       </Html>
     </group>
@@ -178,7 +178,7 @@ function RotatingGlobe({ config, markers, onMarkerClick, onMarkerHover }: Rotati
     }
   }, [earthTexture, bumpTexture]);
 
-  const geometry = useMemo(() => new THREE.SphereGeometry(config.radius, 64, 64), [config.radius]);
+  const geometry = useMemo(() => new THREE.SphereGeometry(config.radius, 48, 48), [config.radius]);
 
   return (
     <group ref={groupRef}>
@@ -378,24 +378,52 @@ export function Globe3D({
   onMarkerClick,
   onMarkerHover,
 }: Globe3DProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [hasMounted, setHasMounted] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const mergedConfig = useMemo(() => ({ ...defaultConfig, ...config }), [config]);
 
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const visible = entry.isIntersecting;
+        setIsVisible(visible);
+        if (visible) setHasMounted(true);
+      },
+      { rootMargin: "160px", threshold: 0.05 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className={cn("relative h-full w-full", className)}>
-      <Canvas
-        gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
-        dpr={[1, 2]}
-        camera={{ fov: 45, near: 0.1, far: 1000, position: [0, 0, mergedConfig.radius * 3.5] }}
-      >
-        <Suspense fallback={<LoadingFallback />}>
-          <Scene
-            markers={markers}
-            config={mergedConfig}
-            onMarkerClick={onMarkerClick}
-            onMarkerHover={onMarkerHover}
-          />
-        </Suspense>
-      </Canvas>
+    <div ref={containerRef} className={cn("relative h-full w-full", className)}>
+      {hasMounted && (
+        <Canvas
+          gl={{
+            antialias: false,
+            alpha: true,
+            powerPreference: "high-performance",
+            stencil: false,
+            depth: true,
+          }}
+          dpr={[1, 1.5]}
+          frameloop={isVisible ? "always" : "never"}
+          camera={{ fov: 45, near: 0.1, far: 1000, position: [0, 0, mergedConfig.radius * 3.5] }}
+        >
+          <Suspense fallback={<LoadingFallback />}>
+            <Scene
+              markers={markers}
+              config={mergedConfig}
+              onMarkerClick={onMarkerClick}
+              onMarkerHover={onMarkerHover}
+            />
+          </Suspense>
+        </Canvas>
+      )}
     </div>
   );
 }

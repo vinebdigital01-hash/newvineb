@@ -85,46 +85,63 @@ export default function SecuritySection() {
   }, []);
 
   useGSAP(() => {
-    // Pin the container and scrub through the wheel items
+    let rafId = 0;
+    let pendingProgress = 0;
+    let scheduled = false;
+
+    const applyProgress = () => {
+      scheduled = false;
+      const maxIndex = SERVICES.length - 1;
+      const exactValue = pendingProgress * maxIndex;
+      setWheelValue(exactValue);
+
+      const snappedIndex = Math.round(exactValue);
+      if (
+        snappedIndex !== activeIndexRef.current &&
+        snappedIndex >= 0 &&
+        snappedIndex <= maxIndex
+      ) {
+        activeIndexRef.current = snappedIndex;
+        gsap.to(contentRef.current, {
+          opacity: 0,
+          y: 20,
+          duration: 0.18,
+          overwrite: true,
+          onComplete: () => {
+            setActiveIndex(snappedIndex);
+            gsap.to(contentRef.current, {
+              opacity: 1,
+              y: 0,
+              duration: 0.35,
+              ease: "power3.out",
+              overwrite: true,
+            });
+          },
+        });
+      }
+    };
+
     gsap.timeline({
       scrollTrigger: {
         trigger: containerRef.current,
-        start: 'top top',
-        end: '+=300%', // Scroll for 300% of height
+        start: "top top",
+        end: "+=300%",
         pin: true,
-        scrub: 0.1, // Smooth scrubbing
+        scrub: 0.35,
+        anticipatePin: 1,
         onUpdate: (self) => {
-          // Progress is 0 to 1
-          // We want the wheel to go from 0 to SERVICES.length - 1
-          const maxIndex = SERVICES.length - 1;
-          const exactValue = self.progress * maxIndex;
-          setWheelValue(exactValue);
-          
-          // Update the right side content when the integer index changes
-          const snappedIndex = Math.round(exactValue);
-          if (snappedIndex !== activeIndexRef.current && snappedIndex >= 0 && snappedIndex <= maxIndex) {
-            activeIndexRef.current = snappedIndex; // Update ref immediately to prevent loop
-            
-            // Animate out old content, update state, animate in new content
-            gsap.to(contentRef.current, {
-              opacity: 0,
-              y: 20,
-              duration: 0.2,
-              onComplete: () => {
-                setActiveIndex(snappedIndex);
-                gsap.to(contentRef.current, {
-                  opacity: 1,
-                  y: 0,
-                  duration: 0.4,
-                  ease: 'power3.out'
-                });
-              }
-            });
+          pendingProgress = self.progress;
+          if (!scheduled) {
+            scheduled = true;
+            rafId = requestAnimationFrame(applyProgress);
           }
-        }
-      }
+        },
+      },
     });
 
+    return () => {
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, { scope: containerRef });
 
   const activeService = SERVICES[activeIndex];

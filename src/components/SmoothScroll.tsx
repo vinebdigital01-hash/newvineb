@@ -9,63 +9,42 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+    if (prefersReducedMotion) {
+      ScrollTrigger.refresh();
+      return;
+    }
+
     const lenis = new Lenis({
-      lerp: 0.09,
-      wheelMultiplier: 0.6,
+      lerp: 0.12,
+      wheelMultiplier: 0.9,
+      touchMultiplier: 1.1,
       smoothWheel: true,
-      touchMultiplier: 1.2,
+      syncTouch: false,
       infinite: false,
     });
 
     lenis.on("scroll", ScrollTrigger.update);
 
-    gsap.ticker.add((time) => {
+    const tick = (time: number) => {
       lenis.raf(time * 1000);
-    });
-    gsap.ticker.lagSmoothing(0);
-
-    // --- Snap on wheel end ---
-    let snapTimeout: ReturnType<typeof setTimeout>;
-    let isSnapping = false;
-
-    const sections = () =>
-      Array.from(document.querySelectorAll("section")) as HTMLElement[];
-
-    const snap = () => {
-      if (isSnapping) return;
-
-      const scrollY = lenis.scroll;
-      const vh = window.innerHeight;
-
-      let best: HTMLElement | null = null;
-      let bestDist = Infinity;
-
-      sections().forEach((sec) => {
-        const dist = Math.abs(sec.offsetTop - scrollY);
-        if (dist < bestDist) { bestDist = dist; best = sec; }
-      });
-
-      if (best && bestDist < vh * 0.65) {
-        isSnapping = true;
-        lenis.scrollTo((best as HTMLElement).offsetTop, {
-          duration: 0.55,
-          easing: (t: number) => 1 - (1 - t) * (1 - t), // ease-out-quad: fast & crisp
-        });
-        setTimeout(() => { isSnapping = false; }, 600);
-      }
     };
 
-    const onWheel = () => {
-      if (isSnapping) return;
-      clearTimeout(snapTimeout);
-      snapTimeout = setTimeout(snap, 180); // fire 180ms after wheel stops
-    };
+    gsap.ticker.add(tick);
+    gsap.ticker.lagSmoothing(500, 33);
 
-    window.addEventListener("wheel", onWheel, { passive: true });
+    // Keep ScrollTrigger measurements correct after fonts/images settle
+    const refresh = () => ScrollTrigger.refresh();
+    window.addEventListener("load", refresh);
+    const refreshTimeout = window.setTimeout(refresh, 400);
 
     return () => {
-      clearTimeout(snapTimeout);
-      window.removeEventListener("wheel", onWheel);
+      window.clearTimeout(refreshTimeout);
+      window.removeEventListener("load", refresh);
+      gsap.ticker.remove(tick);
       lenis.destroy();
     };
   }, []);

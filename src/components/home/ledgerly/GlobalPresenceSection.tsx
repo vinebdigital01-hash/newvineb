@@ -1,11 +1,15 @@
 "use client";
 
 import React, { useRef } from "react";
-import { Globe3D, GlobeMarker } from "@/components/ui/3d-globe";
-import { Globe } from "lucide-react";
+import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+
+const Globe3D = dynamic(
+  () => import("@/components/ui/3d-globe").then((mod) => mod.Globe3D),
+  { ssr: false }
+);
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -132,12 +136,12 @@ export default function GlobalPresenceSection() {
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] bg-[#3B82F6] opacity-[0.1] blur-[100px] rounded-full pointer-events-none" />
           
           <Globe3D
-            markers={sampleMarkers.map(m => ({ lat: m.lat, lng: m.lng, label: m.label, src: "" }))}
+            markers={sampleMarkers.map(m => ({ lat: m.lat, lng: m.lng, label: m.label }))}
             config={{
               radius: 2,
               showAtmosphere: false,
-              bumpScale: 3,
-              autoRotateSpeed: 0.8,
+              bumpScale: 2,
+              autoRotateSpeed: 0.45,
               enableZoom: false,
               enablePan: false,
               markerSize: 0.08,

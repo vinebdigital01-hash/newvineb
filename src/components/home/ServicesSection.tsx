@@ -106,7 +106,7 @@ export default function ServicesSection() {
                         bend={3}
                         textColor="#ffffff"
                         borderRadius={0.05}
-                        scrollEase={0.05}
+                        scrollEase={0.08}
                       />
                     </div>
                   </div>

@@ -290,13 +290,14 @@ export function InteractiveParticles({
     camera.position.z = 300;
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     renderer.setSize(view.width, view.height);
     renderer.setClearColor(0x000000, 0);
 
     let fovHeight = 2 * Math.tan((camera.fov * Math.PI) / 180 / 2) * camera.position.z;
 
-    const clock = new THREE.Clock(true);
+    let lastTime = performance.now();
+    let isInView = true;
     const container3D = new THREE.Object3D();
     scene.add(container3D);
 
@@ -446,8 +447,19 @@ export function InteractiveParticles({
     resizeObserver.observe(container);
     window.addEventListener("resize", applySize);
 
+    const visibilityObserver = new IntersectionObserver(
+      ([entry]) => {
+        isInView = entry.isIntersecting;
+      },
+      { threshold: 0.05 }
+    );
+    visibilityObserver.observe(container);
+
     renderer.setAnimationLoop(() => {
-      const delta = clock.getDelta();
+      if (!isInView || disposed) return;
+      const now = performance.now();
+      const delta = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
       if (touch) touch.update();
       if (uniforms) uniforms.uTime.value += delta;
       renderer.render(scene, camera);
@@ -459,6 +471,7 @@ export function InteractiveParticles({
       canvas.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("resize", applySize);
       resizeObserver.disconnect();
+      visibilityObserver.disconnect();
       if (uniforms) gsap.killTweensOf([uniforms.uSize, uniforms.uRandom, uniforms.uDepth]);
       if (object3D) {
         object3D.geometry.dispose();
@@ -471,7 +484,7 @@ export function InteractiveParticles({
       if (touch) touch.texture.dispose();
       renderer.dispose();
     };
-  }, [effectiveSrc, color, size, randomness, depth, touchRadius, threshold, maxDimension]);
+  }, [effectiveSrc, text, color, size, randomness, depth, touchRadius, threshold, maxDimension]);
 
   return (
     <div

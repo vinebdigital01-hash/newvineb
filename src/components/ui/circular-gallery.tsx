@@ -481,7 +481,11 @@ class AppCore {
     this.observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          const wasVisible = this.isVisible;
           this.isVisible = entry.isIntersecting;
+          if (this.isVisible && !wasVisible && !this.raf) {
+            this.update();
+          }
         });
       },
       { threshold: 0 }
@@ -492,8 +496,8 @@ class AppCore {
   createRenderer() {
     this.renderer = new Renderer({
       alpha: true,
-      antialias: true,
-      dpr: Math.min(window.devicePixelRatio || 1, 2)
+      antialias: false,
+      dpr: Math.min(window.devicePixelRatio || 1, 1.5)
     });
     this.gl = this.renderer.gl;
     this.gl.clearColor(0, 0, 0, 0);
@@ -656,15 +660,18 @@ class AppCore {
   }
 
   update() {
-    if (this.isVisible) {
-      this.scroll.current = lerp(this.scroll.current, this.scroll.target, this.scroll.ease);
-      const direction = this.scroll.current > this.scroll.last ? 'right' : 'left';
-      if (this.medias) {
-        this.medias.forEach(media => media.update(this.scroll, direction));
-      }
-      this.renderer.render({ scene: this.scene, camera: this.camera });
-      this.scroll.last = this.scroll.current;
+    if (!this.isVisible) {
+      this.raf = 0;
+      return;
     }
+
+    this.scroll.current = lerp(this.scroll.current, this.scroll.target, this.scroll.ease);
+    const direction = this.scroll.current > this.scroll.last ? 'right' : 'left';
+    if (this.medias) {
+      this.medias.forEach(media => media.update(this.scroll, direction));
+    }
+    this.renderer.render({ scene: this.scene, camera: this.camera });
+    this.scroll.last = this.scroll.current;
     this.raf = window.requestAnimationFrame(this.update.bind(this));
   }
 
@@ -765,8 +772,8 @@ export function CircularGallery({
       pin: true,
       anticipatePin: 1,
       start: "center center",
-      end: "+=3000", // 3000px of scrolling for 1 full loop
-      scrub: true,
+      end: "+=2200",
+      scrub: 0.4,
       refreshPriority: 1,
       onUpdate: (self) => {
         if (app.medias && app.medias[0]) {
